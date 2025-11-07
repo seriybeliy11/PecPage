@@ -85,10 +85,6 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
           >
             Продать
           </button>
-          <div className="flex items-center gap-1 pb-2">
-            <span className="text-xs sm:text-sm text-muted-foreground">Доллары</span>
-            <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
-          </div>
         </div>
 
         {/* Pick a side */}
