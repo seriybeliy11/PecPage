@@ -23,7 +23,7 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
   const amountValue = Number.parseFloat(amount) || 0
   const contracts = amountValue > 0 ? Math.floor(amountValue / price) : 0
   const fee = amountValue * (FEE_PERCENT / 100)
-  const payout = contracts * 1.0 // $1 per contract if correct
+  const payout = contracts * 1.0
 
   const handleTrade = () => {
     if (!address) {
@@ -34,7 +34,6 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
       alert("Введите сумму")
       return
     }
-    // Here you would call your backend API to execute the trade
     console.log("Executing trade:", { side, position, amount: amountValue, contracts, fee })
     alert(`Сделка выполнена: ${contracts} контрактов`)
   }
@@ -43,15 +42,15 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
     <div className="space-y-4">
       <WalletInfo />
 
-      <Card className="p-6 space-y-6">
+      <Card className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-xl">🕊️</span>
+        <div className="flex items-start gap-2 sm:gap-3">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-base sm:text-xl">🕊️</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-muted-foreground">Будет ли мирное соглашение...</p>
-            <p className="font-medium text-sm">
+            <p className="text-xs sm:text-sm text-muted-foreground">Будет ли мирное соглашение...</p>
+            <p className="font-medium text-xs sm:text-sm">
               <span className={side === "buy" ? "text-blue-600" : "text-orange-600"}>
                 {side === "buy" ? "Купить" : "Продать"}
               </span>{" "}
@@ -68,7 +67,7 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
         <div className="flex gap-2 border-b">
           <button
             onClick={() => setSide("buy")}
-            className={`flex-1 pb-2 text-sm font-medium transition-colors ${
+            className={`flex-1 pb-2 text-xs sm:text-sm font-medium transition-colors ${
               side === "buy"
                 ? "text-blue-600 border-b-2 border-blue-600"
                 : "text-muted-foreground hover:text-foreground"
@@ -78,7 +77,7 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
           </button>
           <button
             onClick={() => setSide("sell")}
-            className={`flex-1 pb-2 text-sm font-medium transition-colors ${
+            className={`flex-1 pb-2 text-xs sm:text-sm font-medium transition-colors ${
               side === "sell"
                 ? "text-blue-600 border-b-2 border-blue-600"
                 : "text-muted-foreground hover:text-foreground"
@@ -86,22 +85,26 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
           >
             Продать
           </button>
+          <div className="flex items-center gap-1 pb-2">
+            <span className="text-xs sm:text-sm text-muted-foreground">Доллары</span>
+            <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
+          </div>
         </div>
 
         {/* Pick a side */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Выберите сторону 💡</label>
+          <label className="text-xs sm:text-sm text-muted-foreground mb-2 block">Выберите сторону 💡</label>
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant={position === "yes" ? "default" : "outline"}
-              className={position === "yes" ? "bg-blue-500 hover:bg-blue-600" : ""}
+              className={`text-sm sm:text-base ${position === "yes" ? "bg-blue-500 hover:bg-blue-600" : ""}`}
               onClick={() => setPosition("yes")}
             >
               Да 47¢
             </Button>
             <Button
               variant={position === "no" ? "default" : "outline"}
-              className={position === "no" ? "bg-purple-500 hover:bg-purple-600" : "border-purple-300 text-purple-600"}
+              className={`text-sm sm:text-base ${position === "no" ? "bg-purple-500 hover:bg-purple-600" : "border-purple-300 text-purple-600"}`}
               onClick={() => setPosition("no")}
             >
               Нет 58¢
@@ -111,37 +114,37 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
 
         {/* Amount */}
         <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Сумма</label>
+          <label className="text-xs sm:text-sm text-muted-foreground mb-2 block">Сумма</label>
           <div className="relative">
             <Input
               type="number"
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="pr-8"
+              className="pr-8 text-sm sm:text-base"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <span className="text-muted-foreground">Контракты</span>
           <span className="font-medium">{contracts}</span>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <span className="text-muted-foreground">Средняя цена</span>
           <span className="font-medium">{(price * 100).toFixed(0)}¢</span>
         </div>
 
         {amountValue > 0 && (
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
             <span className="text-orange-600">Комиссия ({FEE_PERCENT}%)</span>
             <span className="font-medium text-orange-600">${fee.toFixed(2)}</span>
           </div>
         )}
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-1">
             <span className="text-muted-foreground">Выплата если {position === "yes" ? "Да" : "Нет"}</span>
             <span className="text-blue-500 cursor-help">💡</span>
@@ -152,7 +155,7 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
         <Button
           onClick={handleTrade}
           disabled={!address || amountValue <= 0}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 text-base font-semibold disabled:opacity-50"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white h-10 sm:h-12 text-sm sm:text-base font-semibold disabled:opacity-50"
         >
           {!address ? "Подключите кошелек" : side === "buy" ? "Купить" : "Продать"}
         </Button>

@@ -7,17 +7,17 @@ export function PredictionChart() {
   const [timeframe, setTimeframe] = useState("ВСЕ")
 
   const chartData = [
-    { date: "1 Дек", yesPrice: 0.35, noPrice: 0.65 },
-    { date: "15 Дек", yesPrice: 0.42, noPrice: 0.58 },
-    { date: "1 Янв", yesPrice: 0.38, noPrice: 0.62 },
-    { date: "15 Янв", yesPrice: 0.45, noPrice: 0.55 },
-    { date: "1 Фев", yesPrice: 0.48, noPrice: 0.52 },
+    { date: "1 Дек", yesPrice: 0.35, noPrice: 0.35 },
+    { date: "15 Дек", yesPrice: 0.52, noPrice: 0.48 },
+    { date: "1 Янв", yesPrice: 0.78, noPrice: 0.52 },
+    { date: "15 Янв", yesPrice: 0.95, noPrice: 0.65 },
+    { date: "1 Фев", yesPrice: 0.38, noPrice: 0.72 },
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground">Цена по данным рынка (USDT)</h3>
+        <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Цена по данным рынка (USDT)</h3>
         <div className="flex gap-1">
           {["1Д", "1Н", "1М", "ВСЕ"].map((tf) => (
             <Button
@@ -25,7 +25,7 @@ export function PredictionChart() {
               variant={timeframe === tf ? "default" : "ghost"}
               size="sm"
               onClick={() => setTimeframe(tf)}
-              className="h-7 px-3 text-xs"
+              className="h-6 sm:h-7 px-2 sm:px-3 text-xs"
             >
               {tf}
             </Button>
@@ -33,7 +33,7 @@ export function PredictionChart() {
         </div>
       </div>
 
-      <div className="relative h-64 w-full">
+      <div className="relative h-48 sm:h-64 w-full">
         <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1.0].map((y, i) => (
@@ -82,36 +82,33 @@ export function PredictionChart() {
           })}
         </svg>
 
-        {/* X-axis labels */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-xs text-muted-foreground">
+        <div className="absolute bottom-0 left-0 right-0 hidden sm:flex justify-between px-2 text-xs text-muted-foreground">
           {chartData.map((d) => (
             <span key={d.date}>{d.date}</span>
           ))}
         </div>
 
-        {/* Y-axis labels */}
         <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-muted-foreground">
           <span>1.0</span>
-          <span>0.75</span>
+          <span className="hidden sm:inline">0.75</span>
           <span>0.5</span>
-          <span>0.25</span>
+          <span className="hidden sm:inline">0.25</span>
           <span>0</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-6 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-500" />
+      <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-emerald-500" />
           <span className="text-muted-foreground">Да: {chartData[chartData.length - 1].yesPrice.toFixed(2)} USDT</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-purple-500" />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-500" />
           <span className="text-muted-foreground">Нет: {chartData[chartData.length - 1].noPrice.toFixed(2)} USDT</span>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-xs sm:text-sm">
         <span className="text-muted-foreground">2025</span>
         <span className="text-muted-foreground">Объем</span>
         <span className="font-medium">64,534.98 USDT</span>

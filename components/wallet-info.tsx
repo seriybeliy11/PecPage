@@ -13,7 +13,7 @@ export function WalletInfo() {
   const [tonConnectUI] = useTonConnectUI()
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
-  const [balance] = useState(0) // Internal balance - would come from your backend
+  const [balance] = useState(0)
 
   if (!address) {
     return null
@@ -23,36 +23,36 @@ export function WalletInfo() {
 
   return (
     <>
-      <Card className="p-4 space-y-3 bg-blue-50 border-blue-200">
+      <Card className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-blue-50 border-blue-200">
         {/* Wallet Address */}
         <div className="flex items-center gap-2">
-          <Wallet className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-900">{shortAddress}</span>
+          <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+          <span className="text-xs sm:text-sm font-medium text-blue-900">{shortAddress}</span>
         </div>
 
         {/* Internal Balance */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-blue-700">Внутренний баланс:</span>
-          <span className="text-lg font-bold text-blue-900">${balance.toFixed(2)}</span>
+          <span className="text-xs sm:text-sm text-blue-700">Внутренний баланс:</span>
+          <span className="text-base sm:text-lg font-bold text-blue-900">${balance.toFixed(2)}</span>
         </div>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-2">
           <Button
             onClick={() => setShowDeposit(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-1 sm:gap-2 text-xs sm:text-sm"
             size="sm"
           >
-            <ArrowDownToLine className="w-4 h-4" />
+            <ArrowDownToLine className="w-3 h-3 sm:w-4 sm:h-4" />
             Депозит
           </Button>
           <Button
             onClick={() => setShowWithdraw(true)}
             variant="outline"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50 gap-2"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50 gap-1 sm:gap-2 text-xs sm:text-sm"
             size="sm"
           >
-            <ArrowUpFromLine className="w-4 h-4" />
+            <ArrowUpFromLine className="w-3 h-3 sm:w-4 sm:h-4" />
             Вывод
           </Button>
         </div>
