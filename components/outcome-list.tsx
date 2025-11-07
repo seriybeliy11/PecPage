@@ -1,7 +1,30 @@
 "use client"
-
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { createClient } from "@supabase/supabase-js"
+
+// Supabase конфигурация
+const SUPABASE_URL = "https://vmkznbnsvswmaylobzdo.supabase.co"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZta3puYm5zdnN3bWF5bG9iemRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMDQzMTQsImV4cCI6MjA3NzY4MDMxNH0.HZK8tYMVuocyLdYdGw99adWmQXUuxxcQmBvO6jHU4qo"
+
+// Создаем Supabase клиент
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+})
+
+interface Outcome {
+  id: string
+  name: string
+  percentage: number
+  change: string
+  yesPrice: string
+  noPrice: string
+}
 
 interface OutcomeListProps {
   selectedOutcome: string
@@ -9,7 +32,8 @@ interface OutcomeListProps {
 }
 
 export function OutcomeList({ selectedOutcome, onSelectOutcome }: OutcomeListProps) {
-  const outcomes = [
+  // Локальное состояние для хранения данных
+  const [outcomes, setOutcomes] = useState<Outcome[]>([
     {
       id: "peace-deal",
       name: "Мирное соглашение",
@@ -34,7 +58,37 @@ export function OutcomeList({ selectedOutcome, onSelectOutcome }: OutcomeListPro
       yesPrice: "0.29",
       noPrice: "0.83",
     },
-  ]
+  ])
+
+  // Подписка на обновления
+  useEffect(() => {
+    const channel = supabase
+      .channel("outcomes_updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Слушаем все события (INSERT, UPDATE, DELETE)
+          schema: "public",
+          table: "outcomes",
+        },
+        (payload) => {
+          // Обновляем локальное состояние при изменении данных
+          if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+            setOutcomes((prev) =>
+              prev.map((outcome) =>
+                outcome.id === payload.new.id ? { ...outcome, ...payload.new } : outcome
+              )
+            )
+          }
+        }
+      )
+      .subscribe()
+
+    // Отписка при размонтировании компонента
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   return (
     <Card className="divide-y">
@@ -42,11 +96,15 @@ export function OutcomeList({ selectedOutcome, onSelectOutcome }: OutcomeListPro
         <div key={outcome.id} className="p-3 sm:p-4 hover:bg-muted/50 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4 flex-1">
-              <span className="font-medium text-sm sm:text-base min-w-20 sm:min-w-24">{outcome.name}</span>
+              <span className="font-medium text-sm sm:text-base min-w-20 sm:min-w-24">
+                {outcome.name}
+              </span>
               <div className="flex items-center gap-2">
                 <span className="text-xl sm:text-2xl font-bold">{outcome.percentage}%</span>
                 <span
-                  className={`text-xs sm:text-sm ${outcome.change.startsWith("+") ? "text-red-500" : "text-emerald-500"}`}
+                  className={`text-xs sm:text-sm ${
+                    outcome.change.startsWith("+") ? "text-red-500" : "text-emerald-500"
+                  }`}
                 >
                   {outcome.change.startsWith("+") ? "▼" : "▲"} {outcome.change.replace(/[+-]/, "")}
                 </span>
