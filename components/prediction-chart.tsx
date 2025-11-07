@@ -6,8 +6,8 @@ import { createClient } from "@supabase/supabase-js"
 
 interface ChartData {
   date: string
-  yesPrice: number
-  noPrice: number
+  yes_price: number
+  no_price: number
 }
 
 // Supabase конфигурация
@@ -31,50 +31,33 @@ export function PredictionChart() {
   const [isLoading, setIsLoading] = useState(true)
   const subscriptionRef = useRef<any>(null)
 
-  // Инициализация Supabase Realtime
+  // Инициализация данных
   useEffect(() => {
-    const initializeRealtime = async () => {
+    const initializeData = async () => {
       try {
-        // Загрузка начальных данных
+        console.log("🟡 Начало загрузки данных из Supabase...")
+        
+        // Сначала загружаем начальные данные
         await fetchInitialData()
-
-        // Подписка на изменения в реальном времени
-        const subscription = supabase
-          .channel('chart-data-updates')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'prediction_prices'
-            },
-            (payload: any) => {
-              console.log('Realtime update received:', payload)
-              handleRealtimeUpdate(payload)
-            }
-          )
-          .subscribe((status: string) => {
-            console.log('Supabase subscription status:', status)
-            setIsConnected(status === 'SUBSCRIBED')
-          })
-
-        subscriptionRef.current = subscription
-
+        
+        // Затем подписываемся на обновления
+        await subscribeToRealtime()
+        
       } catch (error) {
-        console.error('Error initializing realtime:', error)
+        console.error('❌ Ошибка инициализации:', error)
         setIsConnected(false)
-        // Используем fallback данные при ошибке
         setChartData(getDefaultData())
       } finally {
         setIsLoading(false)
       }
     }
 
-    initializeRealtime()
+    initializeData()
 
     // Очистка подписки при размонтировании
     return () => {
       if (subscriptionRef.current) {
+        console.log("🧹 Очистка подписки Supabase")
         supabase.removeChannel(subscriptionRef.current)
       }
     }
@@ -83,106 +66,159 @@ export function PredictionChart() {
   // Загрузка начальных данных
   const fetchInitialData = async () => {
     try {
-      const { data, error } = await supabase
+      console.log("📊 Выполнение запроса к prediction_prices...")
+      
+      const { data, error, status } = await supabase
         .from('prediction_prices')
-        .select('*')
-        .order('date', { ascending: true })
+        .select('date, yes_price, no_price')
+        .eq('event_id', 1)
+        .order('timestamp', { ascending: true })
+
+      console.log("📋 Статус запроса:", status)
+      console.log("❌ Ошибка запроса:", error)
+      console.log("✅ Полученные данные:", data)
 
       if (error) {
         throw error
       }
 
       if (data && data.length > 0) {
+        console.log(`✅ Загружено ${data.length} записей`)
         setChartData(data)
       } else {
-        // Fallback данные если в базе нет записей
-        console.log('No data found, using default data')
+        console.log("⚠️ Данные не найдены, использую fallback данные")
         setChartData(getDefaultData())
       }
     } catch (error) {
-      console.error('Error fetching initial data:', error)
+      console.error('❌ Ошибка загрузки данных:', error)
       setChartData(getDefaultData())
+    }
+  }
+
+  // Подписка на реальные обновления
+  const subscribeToRealtime = async () => {
+    try {
+      console.log("🔔 Подписка на реальные обновления...")
+      
+      const subscription = supabase
+        .channel('prediction-prices-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'prediction_prices',
+            filter: 'event_id=eq.1'
+          },
+          (payload: any) => {
+            console.log('🔄 Realtime обновление получено:', {
+              eventType: payload.eventType,
+              new: payload.new,
+              old: payload.old
+            })
+            handleRealtimeUpdate(payload)
+          }
+        )
+        .subscribe((status: string) => {
+          console.log('📡 Статус подписки Supabase:', status)
+          setIsConnected(status === 'SUBSCRIBED')
+        })
+
+      subscriptionRef.current = subscription
+      console.log("✅ Подписка установлена")
+
+    } catch (error) {
+      console.error('❌ Ошибка подписки:', error)
+      setIsConnected(false)
     }
   }
 
   // Обработка обновлений в реальном времени
   const handleRealtimeUpdate = (payload: any) => {
+    console.log(`🔄 Обработка события: ${payload.eventType}`)
+    
     switch (payload.eventType) {
       case 'INSERT':
         setChartData(prev => {
           const newData = [...prev, payload.new]
-          // Сортируем по дате и ограничиваем количество точек
+          console.log(`➕ Добавлена новая запись, всего: ${newData.length}`)
           return newData
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .slice(-100) // последние 100 точек
         })
         break
 
       case 'UPDATE':
-        setChartData(prev => 
-          prev.map(item => 
+        setChartData(prev => {
+          const updatedData = prev.map(item => 
             item.date === payload.old.date ? { ...item, ...payload.new } : item
           )
-        )
+          console.log(`✏️ Обновлена запись: ${payload.old.date} -> ${payload.new.date}`)
+          return updatedData
+        })
         break
 
       case 'DELETE':
-        setChartData(prev => 
-          prev.filter(item => item.date !== payload.old.date)
-        )
+        setChartData(prev => {
+          const filteredData = prev.filter(item => item.date !== payload.old.date)
+          console.log(`🗑️ Удалена запись: ${payload.old.date}, осталось: ${filteredData.length}`)
+          return filteredData
+        })
         break
 
       default:
-        console.log('Unknown event type:', payload.eventType)
+        console.log('❓ Неизвестный тип события:', payload.eventType)
     }
   }
 
-  // Fallback данные
+  // Fallback данные на основе вашей SQL вставки
   const getDefaultData = (): ChartData[] => [
-    { date: "2024-12-01", yesPrice: 0.35, noPrice: 0.65 },
-    { date: "2024-12-15", yesPrice: 0.42, noPrice: 0.58 },
-    { date: "2025-01-01", yesPrice: 0.38, noPrice: 0.62 },
-    { date: "2025-01-15", yesPrice: 0.45, noPrice: 0.55 },
-    { date: "2025-02-01", yesPrice: 0.48, noPrice: 0.52 },
+    { date: "1 Дек", yes_price: 0.35, no_price: 0.35 },
+    { date: "15 Дек", yes_price: 0.52, no_price: 0.48 },
+    { date: "1 Янв", yes_price: 0.78, no_price: 0.52 },
+    { date: "15 Янв", yes_price: 0.95, no_price: 0.65 },
+    { date: "1 Фев", yes_price: 0.38, no_price: 0.72 },
   ]
-
-  // Форматирование даты для отображения
-  const formatDate = (dateString: string): string => {
-    try {
-      const date = new Date(dateString)
-      const day = date.getDate()
-      const month = date.toLocaleString('ru-RU', { month: 'short' })
-      return `${day} ${month.charAt(0).toUpperCase() + month.slice(1, 3)}`
-    } catch {
-      return dateString
-    }
-  }
 
   // Получение данных для текущего timeframe
   const getFilteredData = () => {
-    if (timeframe === "ВСЕ" || chartData.length === 0) return chartData
-    
-    const now = new Date()
-    let filterDate = new Date()
-    
-    switch (timeframe) {
-      case "1Д":
-        filterDate.setDate(now.getDate() - 1)
-        break
-      case "1Н":
-        filterDate.setDate(now.getDate() - 7)
-        break
-      case "1М":
-        filterDate.setMonth(now.getMonth() - 1)
-        break
-      default:
-        return chartData
+    if (timeframe === "ВСЕ" || chartData.length === 0) {
+      console.log(`📊 Отображение всех данных: ${chartData.length} записей`)
+      return chartData
     }
     
-    return chartData.filter(item => new Date(item.date) >= filterDate)
+    console.log(`⏰ Фильтрация по timeframe: ${timeframe}`)
+    return chartData
+  }
+
+  // Безопасное вычисление координат для графика
+  const getChartPoints = (data: ChartData[], valueKey: keyof ChartData) => {
+    if (data.length === 0) {
+      console.log("⚠️ Нет данных для построения графика")
+      return ""
+    }
+    
+    const points = data
+      .map((d, i) => {
+        const x = data.length > 1 ? (i / (data.length - 1)) * 600 : 300
+        const value = d[valueKey] as number
+        const y = 200 - (isNaN(value) ? 0 : value) * 200
+        return `${x},${y}`
+      })
+      .join(" ")
+    
+    console.log(`📈 Построено точек для ${valueKey}: ${data.length}`)
+    return points
   }
 
   const displayData = getFilteredData()
+  const hasData = displayData.length > 0
+
+  console.log("🎯 Текущие данные для отображения:", {
+    timeframe,
+    totalRecords: chartData.length,
+    displayRecords: displayData.length,
+    hasData,
+    isLoading
+  })
 
   if (isLoading) {
     return (
@@ -198,7 +234,7 @@ export function PredictionChart() {
           </div>
         </div>
         <div className="h-64 flex items-center justify-center">
-          <div className="text-muted-foreground">Загрузка данных...</div>
+          <div className="text-muted-foreground">Загрузка данных из Supabase...</div>
         </div>
       </div>
     )
@@ -222,7 +258,7 @@ export function PredictionChart() {
               size="sm"
               onClick={() => setTimeframe(tf)}
               className="h-7 px-3 text-xs"
-              disabled={!isConnected}
+              disabled={!isConnected || !hasData}
             >
               {tf}
             </Button>
@@ -247,11 +283,9 @@ export function PredictionChart() {
           ))}
 
           {/* Yes price line (green) */}
-          {displayData.length > 1 && (
+          {hasData && (
             <polyline
-              points={displayData
-                .map((d, i) => `${(i / (displayData.length - 1)) * 600},${200 - d.yesPrice * 200}`)
-                .join(" ")}
+              points={getChartPoints(displayData, 'yes_price')}
               fill="none"
               stroke="#10b981"
               strokeWidth="2"
@@ -259,9 +293,9 @@ export function PredictionChart() {
           )}
 
           {/* No price line (purple) */}
-          {displayData.length > 1 && (
+          {hasData && (
             <polyline
-              points={displayData.map((d, i) => `${(i / (displayData.length - 1)) * 600},${200 - d.noPrice * 200}`).join(" ")}
+              points={getChartPoints(displayData, 'no_price')}
               fill="none"
               stroke="#a855f7"
               strokeWidth="2"
@@ -269,27 +303,25 @@ export function PredictionChart() {
           )}
 
           {/* Data points for Yes */}
-          {displayData.map((d, i) => {
-            const x = (i / (displayData.length - 1)) * 600
-            const y = 200 - d.yesPrice * 200
+          {hasData && displayData.map((d, i) => {
+            const x = displayData.length > 1 ? (i / (displayData.length - 1)) * 600 : 300
+            const y = 200 - (isNaN(d.yes_price) ? 0 : d.yes_price) * 200
             return <circle key={`yes-${i}`} cx={x} cy={y} r="4" fill="#10b981" />
           })}
 
           {/* Data points for No */}
-          {displayData.map((d, i) => {
-            const x = (i / (displayData.length - 1)) * 600
-            const y = 200 - d.noPrice * 200
+          {hasData && displayData.map((d, i) => {
+            const x = displayData.length > 1 ? (i / (displayData.length - 1)) * 600 : 300
+            const y = 200 - (isNaN(d.no_price) ? 0 : d.no_price) * 200
             return <circle key={`no-${i}`} cx={x} cy={y} r="4" fill="#a855f7" />
           })}
         </svg>
 
         {/* X-axis labels */}
-        {displayData.length > 0 && (
+        {hasData && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-xs text-muted-foreground">
-            {displayData.map((d, index) => (
-              <span key={d.date}>
-                {formatDate(d.date)}
-              </span>
+            {displayData.map((d) => (
+              <span key={d.date}>{d.date}</span>
             ))}
           </div>
         )}
@@ -308,13 +340,13 @@ export function PredictionChart() {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-emerald-500" />
           <span className="text-muted-foreground">
-            Да: {displayData[displayData.length - 1]?.yesPrice?.toFixed(2) || "0.00"} USDT
+            Да: {displayData[displayData.length - 1]?.yes_price?.toFixed(2) || "0.00"} USDT
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-purple-500" />
           <span className="text-muted-foreground">
-            Нет: {displayData[displayData.length - 1]?.noPrice?.toFixed(2) || "0.00"} USDT
+            Нет: {displayData[displayData.length - 1]?.no_price?.toFixed(2) || "0.00"} USDT
           </span>
         </div>
       </div>
