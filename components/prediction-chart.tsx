@@ -84,7 +84,7 @@ export function PredictionChart() {
   const fetchInitialData = async () => {
     try {
       const { data, error } = await supabase
-        .from('predictions')
+        .from('prediction_prices')
         .select('*')
         .order('date', { ascending: true })
 
