@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useTonConnectUI } from "@tonconnect/ui-react"
 import * as Dialog from "@radix-ui/react-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,46 +9,22 @@ import { X } from "lucide-react"
 interface DepositModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess: (amount: number) => void
 }
 
-export function DepositModal({ open, onOpenChange }: DepositModalProps) {
-  const [amount, setAmount] = useState("")
-  const [tonConnectUI] = useTonConnectUI()
-  const [loading, setLoading] = useState(false)
+const FEE_PERCENT = 6
 
-  const FEE_PERCENT = 6
+export function DepositModal({ open, onOpenChange, onSuccess }: DepositModalProps) {
+  const [amount, setAmount] = useState("")
   const depositAmount = Number.parseFloat(amount) || 0
   const fee = depositAmount * (FEE_PERCENT / 100)
   const total = depositAmount + fee
 
-  const handleDeposit = async () => {
-    if (!amount || depositAmount <= 0) return
-
-    setLoading(true)
-    try {
-      // Convert USD to TON (simplified - you'd need real exchange rate)
-      const tonAmount = (total * 1000000000).toString() // Convert to nanotons
-
-      const transaction = {
-        validUntil: Math.floor(Date.now() / 1000) + 360,
-        messages: [
-          {
-            address: "UQD_YOUR_DEPOSIT_ADDRESS", // Replace with your deposit address
-            amount: tonAmount,
-          },
-        ],
-      }
-
-      await tonConnectUI.sendTransaction(transaction)
-
-      // Here you would call your backend to credit the user's internal balance
-      onOpenChange(false)
-      setAmount("")
-    } catch (error) {
-      console.error("Deposit failed:", error)
-    } finally {
-      setLoading(false)
-    }
+  const handleDeposit = () => {
+    if (depositAmount <= 0) return
+    onSuccess(depositAmount) // зачисляем только сумму без комиссии
+    setAmount("")
+    onOpenChange(false)
   }
 
   return (
@@ -59,7 +34,7 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
         <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-6 w-full max-w-md z-50 shadow-xl">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Dialog.Title className="text-xl font-bold">Пополнение баланса</Dialog.Title>
+              <Dialog.Title className="text-xl font-bold">Пополнение</Dialog.Title>
               <Dialog.Close asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <X className="w-4 h-4" />
@@ -69,7 +44,7 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Сумма депозита</label>
+                <label className="text-sm font-medium mb-2 block">Сумма</label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -101,10 +76,10 @@ export function DepositModal({ open, onOpenChange }: DepositModalProps) {
 
               <Button
                 onClick={handleDeposit}
-                disabled={!amount || depositAmount <= 0 || loading}
+                disabled={depositAmount <= 0}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                {loading ? "Обработка..." : "Пополнить"}
+                Пополнить
               </Button>
             </div>
           </div>
