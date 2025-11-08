@@ -4,9 +4,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { ChevronDown } from "lucide-react"
-import { WalletInfo } from "./wallet-info"
-import { useTonAddress } from "@tonconnect/ui-react"
 
 interface TradingPanelProps {
   selectedOutcome: string
@@ -16,7 +13,6 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
   const [side, setSide] = useState<"buy" | "sell">("buy")
   const [position, setPosition] = useState<"yes" | "no">("yes")
   const [amount, setAmount] = useState("")
-  const address = useTonAddress()
 
   const FEE_PERCENT = 6
   const price = position === "yes" ? 0.47 : 0.58
@@ -26,27 +22,38 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
   const payout = contracts * 1.0
 
   const handleTrade = () => {
-    if (!address) {
-      alert("Пожалуйста, подключите кошелек")
-      return
-    }
     if (amountValue <= 0) {
       alert("Введите сумму")
       return
     }
-    console.log("Executing trade:", { side, position, amount: amountValue, contracts, fee })
-    alert(`Сделка выполнена: ${contracts} контрактов`)
+
+    console.log("Executing trade:", {
+      side,
+      position,
+      amount: amountValue,
+      contracts,
+      fee,
+      payout
+    })
+
+    alert(
+      `${side === "buy" ? "Покупка" : "Продажа"} выполнена!\n` +
+      `Контрактов: ${contracts}\n` +
+      `Сумма: $${amountValue.toFixed(2)}\n` +
+      `Комиссия: $${fee.toFixed(2)}`
+    )
+
+    // Сброс формы после сделки (опционально)
+    setAmount("")
   }
 
   return (
     <div className="space-y-4">
-      <WalletInfo />
-
       <Card className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex items-start gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-base sm:text-xl">🕊️</span>
+            <span className="text-base sm:text-xl">Pigeon</span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs sm:text-sm text-muted-foreground">Будет ли мирное соглашение...</p>
@@ -89,18 +96,26 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
 
         {/* Pick a side */}
         <div>
-          <label className="text-xs sm:text-sm text-muted-foreground mb-2 block">Выберите сторону 💡</label>
+          <label className="text-xs sm:text-sm text-muted-foreground mb-2 block">
+            Выберите сторону
+          </label>
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant={position === "yes" ? "default" : "outline"}
-              className={`text-sm sm:text-base ${position === "yes" ? "bg-blue-500 hover:bg-blue-600" : ""}`}
+              className={`text-sm sm:text-base ${
+                position === "yes" ? "bg-emerald-500 hover:bg-emerald-600" : ""
+              }`}
               onClick={() => setPosition("yes")}
             >
               Да 47¢
             </Button>
             <Button
               variant={position === "no" ? "default" : "outline"}
-              className={`text-sm sm:text-base ${position === "no" ? "bg-purple-500 hover:bg-purple-600" : "border-purple-300 text-purple-600"}`}
+              className={`text-sm sm:text-base ${
+                position === "no"
+                  ? "bg-purple-500 hover:bg-purple-600"
+                  : "border-purple-300 text-purple-600"
+              }`}
               onClick={() => setPosition("no")}
             >
               Нет 58¢
@@ -119,7 +134,9 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
               onChange={(e) => setAmount(e.target.value)}
               className="pr-8 text-sm sm:text-base"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              $
+            </span>
           </div>
         </div>
 
@@ -142,18 +159,19 @@ export function TradingPanel({ selectedOutcome }: TradingPanelProps) {
 
         <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-1">
-            <span className="text-muted-foreground">Выплата если {position === "yes" ? "Да" : "Нет"}</span>
-            <span className="text-blue-500 cursor-help">💡</span>
+            <span className="text-muted-foreground">
+              Выплата если {position === "yes" ? "Да" : "Нет"}
+            </span>
           </div>
           <span className="font-medium">${payout.toFixed(2)}</span>
         </div>
 
         <Button
           onClick={handleTrade}
-          disabled={!address || amountValue <= 0}
+          disabled={amountValue <= 0}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white h-10 sm:h-12 text-sm sm:text-base font-semibold disabled:opacity-50"
         >
-          {!address ? "Подключите кошелек" : side === "buy" ? "Купить" : "Продать"}
+          {side === "buy" ? "Купить" : "Продать"}
         </Button>
       </Card>
     </div>
