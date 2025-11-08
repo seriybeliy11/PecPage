@@ -7,7 +7,6 @@ import { Share2 } from "lucide-react"
 import { PredictionChart } from "@/components/prediction-chart"
 import { TradingPanel } from "@/components/trading-panel"
 import { OutcomeList } from "@/components/outcome-list"
-import { TonConnect } from "@/components/ton-connect-button"
 import { useRouter } from "next/navigation"
 
 export default function PredictionMarketPage() {
@@ -31,8 +30,6 @@ export default function PredictionMarketPage() {
 
   return (
     <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8">
-      <TonConnect />
-
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-4 lg:gap-6">
           {/* Main Content */}
